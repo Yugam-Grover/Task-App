@@ -26,10 +26,24 @@ router.get("/users/:id", async (req, res) => {
 router.post("/users", async (req, res) => {
   try {
     const user = new User(req.body);
+    await user.generateAuthToken();
     await user.save();
     res.status(201).send(user);
-  } catch (error) {
-    res.status(400).send(error);
+  } catch (e) {
+    res.status(400).send();
+  }
+});
+
+router.post("/users/login", async (req, res) => {
+  try {
+    const user = await User.findByCredentials(
+      req.body.email,
+      req.body.password,
+    );
+    await user.generateAuthToken();
+    res.send(user);
+  } catch (e) {
+    res.status(400).send();
   }
 });
 
@@ -44,11 +58,14 @@ router.patch("/users/:id", async (req, res) => {
 
   try {
     const id = req.params.id;
-    const user = await User.findByIdAndUpdate(id, req.body, {
-      returnDocument: "after",
-      runValidators: true,
-    });
-    if (!user) return res.status(400).send();
+    const user = await User.findById(id);
+    updates.map((update) => (user[update] = req.body[update]));
+    await user.save();
+    // const user = await User.findByIdAndUpdate(id, req.body, {
+    //   returnDocument: "after",
+    //   runValidators: true,
+    // });
+    if (!user) return res.status(404).send();
     res.send(user);
   } catch (error) {
     res.status(400).send(error);
