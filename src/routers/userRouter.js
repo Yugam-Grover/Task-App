@@ -1,8 +1,10 @@
 const express = require("express");
-const User = require("../models/user");
-const auth = require("../middleware/auth");
 const multer = require("multer");
 const sharp = require("sharp");
+
+const User = require("../models/user");
+const auth = require("../middleware/auth");
+const { sendWelcomeEmail, sendFeedbackEmail } = require("../email/account");
 
 const router = new express.Router();
 
@@ -15,9 +17,11 @@ router.post("/users/signup", async (req, res) => {
     const user = new User(req.body);
     const token = await user.generateAuthToken();
     await user.save();
+    sendWelcomeEmail(user.email, user.name);
     res.status(201).send({ user, token });
   } catch (e) {
-    res.status(400).send();
+    console.log(e);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -77,6 +81,7 @@ router.patch("/users/me", auth, async (req, res) => {
 router.delete("/users/me", auth, async (req, res) => {
   try {
     await req.user.deleteOne();
+    sendFeedbackEmail(req.user.email, req.user.name);
     res.send(req.user);
   } catch (error) {
     res.status(500).send();

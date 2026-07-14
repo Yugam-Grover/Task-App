@@ -25,6 +25,7 @@ build/
 out/
 
 # Local Environment Variables
+config/
 .env
 .env.local
 .env.development.local
